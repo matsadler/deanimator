@@ -8,15 +8,13 @@ function deanimate(img) {
         return;
     }
     var id = "deanimator-gif-" + count,
-        width = img.offsetWidth,
-        height = img.offsetHeight,
-        context = document.getCSSCanvasContext("2d", id, width, height),
+        context = document.getCSSCanvasContext("2d", id, img.width, img.height),
         style = document.defaultView.getComputedStyle(img),
-        paddingLeft = style.getPropertyValue("padding-left"),
-        paddingTop = style.getPropertyValue("padding-top");
-    context.drawImage(img, parseInt(paddingLeft), parseInt(paddingTop));
-    img.style.paddingLeft = width + "px";
-    img.style.paddingTop = height + "px";
+        paddingLeft = parseInt(style.getPropertyValue("padding-left")),
+        paddingTop = parseInt(style.getPropertyValue("padding-top"));
+    context.drawImage(img, paddingLeft, paddingTop, img.width, img.height);
+    img.style.paddingLeft = img.width + paddingLeft + "px";
+    img.style.paddingTop = img.height + paddingTop + "px";
     img.style.width = "0";
     img.style.height = "0";
     img.style.backgroundImage = "-webkit-canvas(" + id + ")";
