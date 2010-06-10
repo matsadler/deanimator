@@ -18,6 +18,7 @@ function deanimate(img) {
     img.style.width = "0";
     img.style.height = "0";
     img.style.backgroundImage = "-webkit-canvas(" + id + ")";
+    img.style.backgroundRepeat = "no-repeat";
     count += 1;
 }
 

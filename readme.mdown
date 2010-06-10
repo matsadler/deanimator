@@ -1,5 +1,5 @@
 # Deanimator #
 
-Safari extension to disable animated GIFs.
+Safari extension to stop/disable animated GIFs.
 
-[Download](http://github.com/downloads/matsadler/deanimator/Deanimator-0.1.1.safariextz)
+[Download](http://github.com/downloads/matsadler/deanimator/Deanimator-0.1.2.safariextz)
