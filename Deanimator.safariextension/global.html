@@ -1,0 +1,22 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<title>global</title>
+<script>
+    var responders = {
+        applyToAll: function (event) {
+            return safari.extension.settings.applyToAll;
+        }
+    };
+    
+    safari.application.addEventListener("message", function (event) {
+        var resp = responders[event.name];
+        if (resp) {
+            event.target.page.dispatchMessage(event.name, resp(event.message));
+        }
+    });
+</script>
+</head>
+<body>
+</body>
+</html>
