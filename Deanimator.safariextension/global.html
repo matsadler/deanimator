@@ -6,13 +6,29 @@
     var responders = {
         applyToAll: function (event) {
             return safari.extension.settings.applyToAll;
+        },
+        
+        toDataURL: function (url) {
+            var img = new Image(),
+                canvas = document.createElement("canvas"),
+                context = canvas.getContext("2d");
+            img.src = url;
+            canvas.width = img.width;
+            canvas.height = img.height;
+            context.drawImage(img, 0, 0, img.width, img.height);
+            return canvas.toDataURL();
         }
     };
     
     safari.application.addEventListener("message", function (event) {
-        var resp = responders[event.name];
+        var name = event.name,
+            message = event.message
+            target = event.target.page
+            resp = responders[name];
         if (resp) {
-            event.target.page.dispatchMessage(event.name, resp(event.message));
+            target.dispatchMessage(name, resp(message));
+        } else if (name.match(/^toDataURL:/)) {
+            target.dispatchMessage(name, responders.toDataURL(message));
         }
     });
 </script>
