@@ -1,43 +1,52 @@
-var map = {}
+var grouped;
 
 safari.self.addEventListener("message", function (event) {
-    var name = event.name,
-        image = map[name];
-    console.log(name);
-    if (image) {
-        image.src = event.message;
-        delete map[name]
+    if (event.name.match(/^https?:\/\//)) {
+        var images = grouped[event.name], i;
+        if (images) {
+            for (i = 0; i < images.length; i += 1) {
+                images[i].src = event.message;
+            }
+        }
+        delete grouped[event.name];
     }
 });
 
-function deanimate(image) {
-    var url = image.src,
-        eventName = "toDataURL: " + url;
-    map[eventName] = image;
-    safari.self.tab.dispatchMessage(eventName, url);
+function withImages(func) {
+    var callback = function (event) {
+        if (event.name === "shouldApplyToAll") {
+            if (event.message) {
+                func(document.images);
+            } else {
+                func(document.querySelectorAll('img[src$=".gif"]'));
+            }
+            safari.self.removeEventListener("message", callback);
+        }
+    };
+    
+    safari.self.addEventListener("message", callback);
+    safari.self.tab.dispatchMessage("shouldApplyToAll");
 }
 
-function withImages(func) {
-    safari.self.addEventListener("message", function (event) {
-        console.log("hello");
-        if (event.name === "applyToAll" && event.message) {
-            func(document.images);
-        } else if (event.name === "applyToAll") {
-            func(document.querySelectorAll('img[src$=".gif"]'));
-        }
-    });
-    safari.self.tab.dispatchMessage("applyToAll");
+function groupBy(property, toGroup) {
+    var map = {}, obj, i;
+    for (i = 0; i < toGroup.length; i += 1) {
+        obj = toGroup[i];
+        (map[obj[property]] || (map[obj[property]] = [])).push(obj);
+    }
+    return map;
 }
 
 window.addEventListener("DOMContentLoaded", function () {
-    var host = new RegExp("^(" + location.protocol + ")?//" + location.host);
-    
     withImages(function (images) {
-        var i;
-        for (i = 0; i < images.length; i += 1) {
-            images[i].addEventListener("load", function (event) {
-                deanimate(event.target);
-            });
+        var property, group;
+        grouped = groupBy("src", images);
+        
+        for (property in grouped) {
+            if (grouped.hasOwnProperty(property)) {
+                group = grouped[property];
+                safari.self.tab.dispatchMessage("toDataURL", group[0].src);
+            }
         }
     });
 });

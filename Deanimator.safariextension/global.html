@@ -4,31 +4,30 @@
 <title>global</title>
 <script>
     var responders = {
-        applyToAll: function (event) {
-            return safari.extension.settings.applyToAll;
+        shouldApplyToAll: function (event) {
+            var value = safari.extension.settings.applyToAll;
+            event.target.page.dispatchMessage("shouldApplyToAll", value);
         },
         
-        toDataURL: function (url) {
-            var img = new Image(),
+        toDataURL: function (event) {
+            var url = event.message,
+                img = new Image(),
                 canvas = document.createElement("canvas"),
                 context = canvas.getContext("2d");
+            img.addEventListener("load", function (e) {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                context.drawImage(img, 0, 0, img.width, img.height);
+                event.target.page.dispatchMessage(url, canvas.toDataURL());
+            });
             img.src = url;
-            canvas.width = img.width;
-            canvas.height = img.height;
-            context.drawImage(img, 0, 0, img.width, img.height);
-            return canvas.toDataURL();
         }
     };
     
     safari.application.addEventListener("message", function (event) {
-        var name = event.name,
-            message = event.message
-            target = event.target.page
-            resp = responders[name];
-        if (resp) {
-            target.dispatchMessage(name, resp(message));
-        } else if (name.match(/^toDataURL:/)) {
-            target.dispatchMessage(name, responders.toDataURL(message));
+        var responder = responders[event.name];
+        if (responder) {
+            responder(event);
         }
     });
 </script>
