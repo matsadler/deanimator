@@ -3,32 +3,24 @@
 <head>
 <title>global</title>
 <script>
-    var responders = {
-        shouldApplyToAll: function (event) {
-            var value = safari.extension.settings.applyToAll;
-            event.target.page.dispatchMessage("shouldApplyToAll", value);
-        },
-        
-        toDataURL: function (event) {
-            var url = event.message,
-                img = new Image(),
-                canvas = document.createElement("canvas"),
-                context = canvas.getContext("2d");
-            img.addEventListener("load", function (e) {
-                canvas.width = img.width;
-                canvas.height = img.height;
-                context.drawImage(img, 0, 0, img.width, img.height);
-                event.target.page.dispatchMessage(url, canvas.toDataURL());
-            });
-            img.src = url;
-        }
-    };
-    
     safari.application.addEventListener("message", function (event) {
-        var responder = responders[event.name];
-        if (responder) {
-            responder(event);
+        if (event.name !== "toDataURL") {
+            return;
         }
+        var url = event.message, img, canvas, context;
+        if (!safari.extension.settings.applyToAll && !url.match(/\.gif/)) {
+            return;
+        }
+        img = new Image();
+        canvas = document.createElement("canvas");
+        context = canvas.getContext("2d");
+        img.addEventListener("load", function (e) {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            context.drawImage(img, 0, 0, img.width, img.height);
+            event.target.page.dispatchMessage(url, canvas.toDataURL());
+        });
+        img.src = url;
     });
 </script>
 </head>
