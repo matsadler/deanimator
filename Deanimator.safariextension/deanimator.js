@@ -1,14 +1,14 @@
-var imagesBySrc;
+var imagesByURL;
 
 safari.self.addEventListener("message", function (event) {
-    if (event.name.match(/^https?:\/\//)) {
-        var images = imagesBySrc[event.name], i;
+    if (event.name === "imageAsDataURL") {
+        var message = event.message, images = imagesByURL[message.url], i;
         if (images) {
             for (i = 0; i < images.length; i += 1) {
-                images[i].src = event.message;
+                images[i].src = message.dataURL;
             }
         }
-        delete imagesBySrc[event.name];
+        delete imagesByURL[message.url];
     }
 });
 
@@ -23,10 +23,10 @@ function groupBy(property, array) {
 
 window.addEventListener("DOMContentLoaded", function () {
     var url;
-    imagesBySrc = groupBy("src", document.images);
+    imagesByURL = groupBy("src", document.images);
     
-    for (url in imagesBySrc) {
-        if (imagesBySrc.hasOwnProperty(url)) {
+    for (url in imagesByURL) {
+        if (imagesByURL.hasOwnProperty(url)) {
             safari.self.tab.dispatchMessage("toDataURL", url);
         }
     }

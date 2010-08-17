@@ -7,7 +7,7 @@
         if (event.name !== "toDataURL") {
             return;
         }
-        var url = event.message, img, canvas, context;
+        var url = event.message, img, canvas, context, message;
         if (!safari.extension.settings.applyToAll && !url.match(/\.gif/)) {
             return;
         }
@@ -18,7 +18,8 @@
             canvas.width = img.width;
             canvas.height = img.height;
             context.drawImage(img, 0, 0, img.width, img.height);
-            event.target.page.dispatchMessage(url, canvas.toDataURL());
+            message = {url: url, dataURL: canvas.toDataURL()};
+            event.target.page.dispatchMessage("imageAsDataURL", message);
         });
         img.src = url;
     });
