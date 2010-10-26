@@ -1,4 +1,18 @@
-var imagesByURL;
+var imagesByURL = {};
+
+imagesByURL.constructor.prototype.merge = function (hash) {
+    var key;
+    for (key in hash) {
+        if (hash.hasOwnProperty(key)) {
+            if (!this[key]) {
+                this[key] = hash[key];
+            } else {
+                this[key] = this[key].concat(hash[key]);
+            }
+        }
+    }
+    return this;
+};
 
 safari.self.addEventListener("message", function (event) {
     if (event.name === "imageAsDataURL") {
@@ -21,13 +35,24 @@ function groupBy(property, array) {
     return hash;
 }
 
-window.addEventListener("DOMContentLoaded", function () {
-    var url;
-    imagesByURL = groupBy("src", document.images);
+function deanimate(event) {
+    var url, images, grouped;
+    if (event.target.tagName === "IMG") {
+        images = [event.target];
+    } else if (event.target.parentNode) {
+        images = event.target.parentNode.getElementsByTagName("img");
+    } else {
+        return;
+    }
+    grouped = groupBy("src", images);
     
-    for (url in imagesByURL) {
-        if (imagesByURL.hasOwnProperty(url)) {
+    imagesByURL.merge(grouped);
+    for (url in grouped) {
+        if (grouped.hasOwnProperty(url)) {
             safari.self.tab.dispatchMessage("toDataURL", url);
         }
     }
-});
+}
+
+window.addEventListener("DOMContentLoaded", deanimate);
+window.addEventListener("DOMNodeInserted", deanimate);
