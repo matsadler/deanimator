@@ -1,17 +1,12 @@
 var imagesByURL = {};
 
-imagesByURL.constructor.prototype.merge = function (hash) {
-    var key;
-    for (key in hash) {
-        if (hash.hasOwnProperty(key)) {
-            if (!this[key]) {
-                this[key] = hash[key];
-            } else {
-                this[key] = this[key].concat(hash[key]);
-            }
-        }
+imagesByURL.constructor.prototype.add = function (image) {
+    var url = image.src,
+        store = (this[url] || (this[url] = []));
+    if (store.indexOf(image) < 0) {
+        store.push(image);
     }
-    return this;
+    return image;
 };
 
 safari.self.addEventListener("message", function (event) {
@@ -26,32 +21,24 @@ safari.self.addEventListener("message", function (event) {
     }
 });
 
-function groupBy(property, array) {
-    var hash = {}, obj, i;
-    for (i = 0; i < array.length; i += 1) {
-        obj = array[i];
-        (hash[obj[property]] || (hash[obj[property]] = [])).push(obj);
-    }
-    return hash;
-}
-
 function deanimate(event) {
-    var url, images, grouped;
+    var nodeList, images;
     if (event.target.tagName === "IMG") {
         images = [event.target];
-    } else if (event.target.parentNode) {
-        images = event.target.parentNode.getElementsByTagName("img");
+    } else if (event.target.getElementsByTagName) {
+        nodeList = event.target.getElementsByTagName("img");
+        images = Array.prototype.slice.call(nodeList);
     } else {
         return;
     }
-    grouped = groupBy("src", images);
     
-    imagesByURL.merge(grouped);
-    for (url in grouped) {
-        if (grouped.hasOwnProperty(url)) {
-            safari.self.tab.dispatchMessage("toDataURL", url);
+    images.forEach(function (image, index) {
+        var URLKnown = imagesByURL[image.src];
+        imagesByURL.add(image);
+        if (!URLKnown) {
+            safari.self.tab.dispatchMessage("toDataURL", image.src);
         }
-    }
+    });
 }
 
 window.addEventListener("DOMContentLoaded", deanimate);
