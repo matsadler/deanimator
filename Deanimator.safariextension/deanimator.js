@@ -1,45 +1,48 @@
-var imagesByURL = {};
-
-imagesByURL.constructor.prototype.add = function (image) {
-    var url = image.src,
-        store = (this[url] || (this[url] = []));
-    if (store.indexOf(image) < 0) {
-        store.push(image);
+var ImagesByURL = {
+    hash: {},
+    add: function (url, image) {
+        var store = (this.hash[url] || (this.hash[url] = []));
+        if (store.indexOf(image) < 0) {
+            store.push(image);
+        }
+        return image;
+    },
+    remove: function (url) {
+        var value = this.hash[url];
+        delete this.hash[url];
+        return value || [];
+    },
+    include: function (url) {
+        return this.hash.hasOwnProperty(url);
     }
-    return image;
 };
 
-safari.self.addEventListener("message", function (event) {
-    if (event.name === "imageAsDataURL") {
-        var message = event.message, images = imagesByURL[message.url], i;
-        if (images) {
-            for (i = 0; i < images.length; i += 1) {
-                images[i].src = message.dataURL;
-            }
-        }
-        delete imagesByURL[message.url];
-    }
-});
-
-function deanimate(event) {
-    var nodeList, images;
-    if (event.target.tagName === "IMG") {
-        images = [event.target];
-    } else if (event.target.getElementsByTagName) {
-        nodeList = event.target.getElementsByTagName("img");
-        images = Array.prototype.slice.call(nodeList);
-    } else {
-        return;
-    }
-    
-    images.forEach(function (image, index) {
-        var URLKnown = imagesByURL[image.src];
-        imagesByURL.add(image);
-        if (!URLKnown) {
+function deanimate(images) {
+    [].slice.call(images).forEach(function (image) {
+        if (!ImagesByURL.include(image.src)) {
             safari.self.tab.dispatchMessage("toDataURL", image.src);
         }
+        ImagesByURL.add(image.src, image);
     });
 }
 
-window.addEventListener("DOMContentLoaded", deanimate);
-window.addEventListener("DOMNodeInserted", deanimate);
+safari.self.addEventListener("message", function (event) {
+    if (event.name === "imageAsDataURL") {
+        var message = event.message, images = ImagesByURL.remove(message.url);
+        images.forEach(function (image) {
+            image.src = message.dataURL;
+        });
+    }
+});
+
+window.addEventListener("DOMContentLoaded", function (event) {
+    deanimate(document.images);
+});
+
+window.addEventListener("DOMNodeInserted", function (event) {
+    if (event.target.tagName === "IMG") {
+        deanimate([event.target]);
+    } else if (event.target.getElementsByTagName) {
+        deanimate(event.target.getElementsByTagName("img"));
+    }
+});
