@@ -26,17 +26,54 @@ function deanimate(images) {
     });
 }
 
-safari.self.addEventListener("message", function (event) {
-    if (event.name === "imageAsDataURL") {
+
+function deanimateBackground(elements) {
+    [].slice.call(elements).forEach(function (element) {
+        var style = window.getComputedStyle(element, null),
+            match = style.backgroundImage.match(/^url\((.*)\)$/),
+            url = match ? match[1] : null;
+        if (url) {
+            if (!ImagesByURL.include(url)) {
+                safari.self.tab.dispatchMessage("toDataURL", url);
+            }
+            ImagesByURL.add(url, element);
+        }
+    });
+}
+
+var Responders = {
+    imageAsDataURL: function (event) {
         var message = event.message, images = ImagesByURL.remove(message.url);
         images.forEach(function (image) {
-            image.src = message.dataURL;
+            if (image.src === message.url) {
+                image.src = message.dataURL;
+            }
         });
+        images.forEach(function (image) {
+            var style = window.getComputedStyle(image, null);
+            if (style.backgroundImage === "url(" + message.url + ")") {
+                image.style.backgroundImage = "url(" + message.dataURL + ")";
+            }
+        });
+    },
+    applyToBackgroundImages: function (event) {
+        deanimateBackground(document.querySelectorAll("*"));
+    }
+};
+
+safari.self.addEventListener("message", function (event) {
+    var responder = Responders[event.name];
+    if (responder) {
+        responder(event);
     }
 });
 
 window.addEventListener("DOMContentLoaded", function (event) {
     deanimate(document.images);
+});
+
+window.addEventListener("load", function (event) {
+    safari.self.tab.dispatchMessage("applyToBackgroundImages");
 });
 
 window.addEventListener("DOMNodeInserted", function (event) {
